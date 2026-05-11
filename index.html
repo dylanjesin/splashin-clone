@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chat Assassins – Splashin 26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<style>
+/* ─── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+input, button { font-family:inherit; }
+
+/* ─── Tokens ─────────────────────────────────────────────── */
+:root {
+  --bg:        #111111;
+  --card:      #1a1a1a;
+  --input:     #222222;
+  --div:       #333333;
+  --border:    #444444;
+  --blue:      #4da3ff;
+  --btn-bg:    #1e3a5f;
+  --muted:     #888888;
+  --dim:       #555555;
+  --margin:    14px;
+  --nav:       70px;
+  --r-pill:    999px;
+  --r-card:    10px;
+  --r-sheet:   16px;
+  --grad:      linear-gradient(135deg,#8b5cf6,#06b6d4);
+  --white:     #f0f0f0;
+}
+
+/* ─── Desktop phone shell ────────────────────────────────── */
+body {
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  font-family:'Nunito',sans-serif;
+  color:var(--white);
+}
+.frame {
+  width:390px;
+  height:844px;
+  background:var(--bg);
+  border-radius:44px;
+  border:2px solid #222;
+  box-shadow:0 0 0 1px #111,0 40px 100px rgba(0,0,0,.9);
+  overflow:hidden;
+  position:relative;
+  flex-shrink:0;
+}
+@media(max-width:430px){
+  body{ align-items:flex-start; background:var(--bg); }
+  .frame{ width:100%; height:100dvh; border-radius:0; border:none; box-shadow:none; }
+}
+
+/* ─── Screen layer system ────────────────────────────────── */
+.screen {
+  position:absolute; inset:0;
+  display:none;
+  flex-direction:column;
+  background:var(--bg);
+}
+.screen.active { display:flex; }
+
+/* Home + map are always rendered, layered by z-index */
+#s-home { display:flex; z-index:2; }
+#s-map  { display:flex; z-index:1; }
+
+/* ─── Home pull-down handle ──────────────────────────────── */
+.pull-tab {
+  display:flex; justify-content:center; align-items:center;
+  padding:4px 0 12px; cursor:grab; flex-shrink:0;
+  touch-action:none;
+}
+.pull-tab-bar { width:36px; height:4px; background:#444; border-radius:2px; }
+
+#home-pullable {
+  flex:1; min-height:0;
+  display:flex; flex-direction:column;
+  background:var(--bg);
+  will-change:transform;
+}
+#home-pullable.snap {
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+}
+
+/* Settings always rendered, slides from right */
+#s-settings {
+  display:flex;
+  transform:translateX(100%);
+  transition:transform .32s cubic-bezier(.4,0,.2,1);
+  z-index:50;
+}
+#s-settings.open { transform:translateX(0); }
+
+/* ─── Status bar ─────────────────────────────────────────── */
+.status {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 22px 6px;
+  flex-shrink:0;
+}
+.status-time { font-size:16px; font-weight:700; }
+.status-icons { display:flex; gap:5px; align-items:center; }
+.status-icons i { font-size:14px; }
+
+/* ─── Top bar ────────────────────────────────────────────── */
+.topbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:4px var(--margin) 12px;
+  flex-shrink:0;
+}
+.icon-btn {
+  width:38px; height:38px;
+  border-radius:50%;
+  background:var(--white);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0;
+}
+.icon-btn i { color:var(--blue); font-size:20px; }
+.game-pill {
+  flex:1; margin:0 40px;
+  background:var(--white);
+  border-radius:var(--r-pill);
+  padding:8px 16px;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  cursor:pointer;
+}
+.game-pill span { font-size:14px; font-weight:700; color:#111; letter-spacing:.2px; }
+.game-pill i { font-size:14px; color:#666; }
+
+/* ─── Search bar ─────────────────────────────────────────── */
+.search {
+  margin:0 var(--margin) 12px;
+  background:var(--input);
+  border-radius:var(--r-pill);
+  padding:10px 16px;
+  display:flex; align-items:center; gap:8px;
+  flex-shrink:0;
+}
+.search i { color:var(--muted); font-size:17px; }
+.search input {
+  background:none; border:none; outline:none;
+  color:var(--muted); font-size:14px; flex:1;
+}
+.search input::placeholder { color:var(--muted); }
+
+/* ─── Tab row ────────────────────────────────────────────── */
+.tabs {
+  display:flex; align-items:center; gap:8px;
+  padding:0 var(--margin) 12px;
+  overflow-x:auto; flex-shrink:0;
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar { display:none; }
+
+.tab-avatar {
+  width:36px; height:36px; border-radius:50%;
+  background:#333;
+  overflow:hidden; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.tab-avatar img { width:100%; height:100%; object-fit:cover; }
+.tab-avatar i { color:var(--muted); font-size:20px; }
+
+.tab {
+  padding:7px 15px; border-radius:var(--r-pill);
+  font-size:13px; font-weight:500;
+  white-space:nowrap; flex-shrink:0; cursor:pointer;
+  border:1px solid var(--white); color:#ccc;
+  background:transparent; position:relative;
+}
+.tab.active {
+  color:#fff;
+  border:1px solid transparent;
+  background:
+    linear-gradient(var(--bg), var(--bg)) padding-box,
+    linear-gradient(90deg,#ff0080,#ff6a00,#ffd700,#00e676,#00b4d8,#7b2ff7,#ff0080) border-box;
+}
+
+/* ─── Divider ────────────────────────────────────────────── */
+.divider { height:1px; background:var(--div); flex-shrink:0; }
+
+/* ─── Stats row ──────────────────────────────────────────── */
+.stats {
+  display:flex; align-items:stretch;
+  padding:14px var(--margin);
+  flex-shrink:0;
+}
+.stat {
+  flex:0.7; display:flex; flex-direction:column;
+  align-items:center; gap:3px;
+}
+.stat+.stat { border-left:1px solid var(--div); }
+.stat-label { font-size:15px; font-weight:600; color:var(--muted); }
+.stat-value { font-size:18px; font-weight:700; }
+.stat-code  { font-size:18px; font-weight:700; letter-spacing:1px; }
+.stat-share-col {
+  flex:1.2; display:flex; flex-direction:row;
+  align-items:center; justify-content:center; gap:6px;
+  border-left:1px solid var(--div);
+}
+.share-btn {
+  width:30px; height:30px; border-radius:50%;
+  border:1.5px solid var(--blue);
+  background:var(--white);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  margin-left:6px;
+}
+.share-btn i { color:var(--blue); font-size:15px; }
+
+/* ─── Announcement card ──────────────────────────────────── */
+.ann-card {
+  margin:0 var(--margin) 14px;
+  background:var(--card); border-radius:var(--r-card);
+  padding:12px 14px; flex-shrink:0;
+}
+.ann-head { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+.ann-logo {
+  width:28px; height:28px; border-radius:50%;
+  background:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:14px;
+  overflow:hidden;
+}
+.ann-name { font-size:13px; font-weight:600; }
+.ann-body { font-size:13px; color:#ccc; line-height:1.45; }
+
+/* ─── Generic section header ─────────────────────────────── */
+.section-head {
+  padding:0 var(--margin) 10px;
+  font-size:15px; font-weight:600; flex-shrink:0;
+  color:var(--muted);
+}
+
+/* ─── Target card ────────────────────────────────────────── */
+.target-wrap { padding:0 var(--margin) 16px; flex-shrink:0; }
+.target-col {
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  width:72px;
+}
+.target-circle {
+  width:72px; height:72px; border-radius:50%;
+  background:#000; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+}
+.target-circle img { width:100%; height:100%; object-fit:cover; }
+.target-name-lbl { font-size:13px; font-weight:500; color:var(--muted); }
+.target-status { display:flex; align-items:center; gap:3px; }
+.green-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; }
+
+/* ─── Bounties ───────────────────────────────────────────── */
+.bounties-head {
+  padding:0 var(--margin) 4px;
+  display:flex; align-items:center; gap:6px; flex-shrink:0;
+}
+.bounties-head span:first-child { font-size:15px; font-weight:600; color:var(--muted); }
+.bounties-empty {
+  text-align:center; color:var(--muted); font-size:13px;
+  padding:14px var(--margin);
+}
+
+/* ─── Latest activity row ────────────────────────────────── */
+.activity-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:0 var(--margin) 14px; flex-shrink:0;
+}
+.activity-row .lbl { font-size:15px; font-weight:600; }
+.activity-row .lnk { font-size:13px; color:var(--blue); cursor:pointer; }
+
+/* ─── Need help ──────────────────────────────────────────── */
+.need-help {
+  text-align:center; font-size:13px; color:var(--muted);
+  text-decoration:underline; padding:6px 0 14px; cursor:pointer;
+}
+
+/* ─── Scroll area ────────────────────────────────────────── */
+.scroll { flex:1; min-height:0; overflow-y:auto; scrollbar-width:none; }
+.scroll::-webkit-scrollbar { display:none; }
+
+/* ─── Bottom nav ─────────────────────────────────────────── */
+.nav {
+  height:var(--nav);
+  background:var(--bg);
+  border-top:1px solid var(--div);
+  display:flex; align-items:center; justify-content:space-around;
+  padding:0 4px 10px;
+  flex-shrink:0; z-index:20;
+}
+.nav-item {
+  display:flex; align-items:center; justify-content:center;
+  padding:8px 14px; cursor:pointer;
+}
+.nav-item i { font-size:24px; color:var(--dim); }
+.nav-item.active i { color:var(--blue); }
+.nav-plus {
+  width:48px; height:48px; border-radius:50%;
+  background:var(--white);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.nav-plus i { font-size:24px; color:#111; }
+
+/* ════════════════════════════════════════════════════════════
+   MAP SCREEN
+═══════════════════════════════════════════════════════════ */
+#mapbox { position:absolute; inset:0; }
+
+/* Floating overlay above map */
+.map-float {
+  position:absolute; top:0; left:0; right:0;
+  pointer-events:none; z-index:5;
+}
+.map-float > * { pointer-events:auto; }
+
+/* Side button groups */
+.map-left, .map-right {
+  position:absolute; top:108px; z-index:5;
+  display:flex; flex-direction:column; gap:8px;
+}
+.map-left  { left:var(--margin); }
+.map-right { right:var(--margin); }
+
+.icon-btn-amber { background:#1f1800; }
+.icon-btn-amber i { color:#f59e0b; }
+.icon-btn-purple { background:#1e0d3a; }
+.icon-btn-purple i { color:#a78bfa; }
+
+/* Corner pills */
+.map-corner-right {
+  position:absolute; right:var(--margin); bottom:calc(var(--nav) + 115px);
+  z-index:5;
+  display:flex; flex-direction:column; align-items:flex-end; gap:6px;
+}
+.map-corner-left {
+  position:absolute; left:var(--margin); bottom:calc(var(--nav) + 115px);
+  z-index:5;
+}
+.pill-dark {
+  background:rgba(0,0,0,.85); border-radius:var(--r-pill);
+  padding:6px 14px; font-size:15px; font-weight:700; color:#fff;
+}
+.pill-light {
+  background:rgba(255,255,255,.95); border-radius:var(--r-pill);
+  padding:6px 14px; font-size:14px; font-weight:700; color:#111;
+}
+.crown-btn {
+  width:42px; height:42px; border-radius:50%;
+  background:var(--btn-bg);
+  display:flex; align-items:center; justify-content:center;
+}
+.crown-btn i { color:#f59e0b; font-size:20px; }
+
+/* Map nav (absolute) */
+.map-nav {
+  position:absolute; bottom:0; left:0; right:0; z-index:20;
+  height:var(--nav);
+  background:var(--bg);
+  border-top:1px solid var(--div);
+  display:flex; align-items:center; justify-content:space-around;
+  padding:0 4px 10px;
+}
+
+/* ─── Map markers ────────────────────────────────────────── */
+.pin {
+  display:flex; flex-direction:column; align-items:center;
+  cursor:pointer; position:relative;
+}
+.pin-circle {
+  width:52px; height:52px; border-radius:50%;
+  border:3px solid #fff;
+  background:#fff;
+  overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 3px 14px rgba(0,0,0,.5);
+}
+.pin-circle img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.pin-circle i { color:#888; font-size:28px; }
+.pin-point {
+  width:0; height:0; margin-top:-1px;
+  border-left:8px solid transparent;
+  border-right:8px solid transparent;
+  border-top:12px solid #fff;
+}
+
+.pin-target .pin-circle {
+  border-color:#ef4444; background:#111;
+  box-shadow:0 3px 14px rgba(239,68,68,.4);
+}
+.pin-target .pin-point { border-top-color:#ef4444; }
+
+/* ─── Draggable bottom sheet ─────────────────────────────── */
+.sheet {
+  position:absolute;
+  left:0; right:0;
+  bottom:var(--nav);
+  height:100px;
+  background:#111;
+  border-radius:var(--r-sheet) var(--r-sheet) 0 0;
+  z-index:10;
+  transition:height .3s cubic-bezier(.4,0,.2,1);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.sheet-handle-area {
+  padding:10px 0 6px;
+  display:flex; justify-content:center;
+  cursor:grab; flex-shrink:0;
+  user-select:none;
+}
+.sheet-handle { width:36px; height:4px; background:#444; border-radius:2px; }
+.sheet-body { flex:1; overflow-y:auto; scrollbar-width:none; }
+.sheet-body::-webkit-scrollbar { display:none; }
+
+/* ════════════════════════════════════════════════════════════
+   SETTINGS SCREEN
+═══════════════════════════════════════════════════════════ */
+.settings-header {
+  display:flex; align-items:center;
+  padding:14px var(--margin) 12px;
+  flex-shrink:0; position:relative;
+}
+.settings-title {
+  position:absolute; left:50%; transform:translateX(-50%);
+  font-size:17px; font-weight:600;
+}
+.back-btn {
+  display:flex; align-items:center; gap:2px;
+  color:var(--blue); font-size:15px; cursor:pointer;
+}
+.back-btn i { font-size:20px; color:var(--blue); }
+
+.s-scroll { flex:1; overflow-y:auto; scrollbar-width:none; padding:0 var(--margin); }
+.s-scroll::-webkit-scrollbar { display:none; }
+
+.s-section { margin-bottom:28px; }
+.s-section-title {
+  font-size:11px; font-weight:600; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.9px;
+  margin-bottom:14px;
+}
+.s-field { margin-bottom:14px; }
+.s-label { font-size:13px; color:var(--muted); margin-bottom:6px; }
+
+.s-input {
+  width:100%; background:var(--input);
+  border:1.5px solid var(--border); border-radius:10px;
+  padding:11px 14px; color:#fff; font-size:15px; outline:none;
+}
+.s-input:focus { border-color:var(--blue); }
+
+.photo-row { display:flex; flex-direction:column; align-items:flex-start; gap:10px; }
+.photo-preview {
+  width:80px; height:80px; border-radius:50%;
+  background:var(--input); border:2px solid var(--border);
+  overflow:hidden; display:flex; align-items:center; justify-content:center;
+}
+.photo-preview img { width:100%; height:100%; object-fit:cover; }
+.photo-preview i { color:var(--muted); font-size:36px; }
+.photo-btn {
+  background:var(--btn-bg); border:none; border-radius:8px;
+  padding:8px 16px; color:var(--blue); font-size:14px;
+  font-weight:500; cursor:pointer;
+}
+
+.coords-row { display:flex; gap:10px; margin-bottom:10px; }
+.coords-row .s-input { flex:1; }
+.pin-btn {
+  width:100%; background:var(--blue); border:none; border-radius:10px;
+  padding:12px; color:#fff; font-size:15px; font-weight:600;
+  cursor:pointer; margin-bottom:8px;
+}
+.helper { font-size:11px; color:var(--dim); text-align:center; }
+
+.info-row {
+  display:flex; background:var(--card); border-radius:var(--r-card); overflow:hidden;
+}
+.info-col {
+  flex:1; padding:14px 0;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+}
+.info-col+.info-col { border-left:1px solid var(--div); }
+
+/* ─── Photo cropper modal ────────────────────────────────── */
+.crop-modal {
+  position:absolute; inset:0;
+  background:rgba(0,0,0,.93);
+  z-index:200;
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:28px; gap:18px;
+}
+.crop-modal.open { display:flex; }
+.crop-title { font-size:16px; font-weight:700; color:var(--white); }
+.crop-viewport {
+  width:220px; height:220px; border-radius:50%;
+  overflow:hidden; border:3px solid var(--blue);
+  position:relative; cursor:move;
+  user-select:none; touch-action:none;
+  background:#1a1a1a; flex-shrink:0;
+}
+.crop-viewport img { position:absolute; transform-origin:top left; pointer-events:none; max-width:none; }
+.crop-zoom-row { width:100%; display:flex; align-items:center; gap:10px; }
+.crop-zoom-row i { color:var(--muted); }
+.crop-zoom-row input[type=range] { flex:1; accent-color:var(--blue); }
+.crop-hint { font-size:12px; color:var(--muted); text-align:center; }
+.crop-actions { display:flex; gap:12px; width:100%; }
+.crop-btn {
+  flex:1; padding:12px; border-radius:10px;
+  border:none; font-size:15px; font-weight:600;
+  font-family:'Nunito',sans-serif; cursor:pointer;
+}
+.crop-btn-cancel  { background:var(--div); color:var(--white); }
+.crop-btn-confirm { background:var(--blue); color:#fff; }
+
+/* ─── Mapbox chrome suppression ──────────────────────────── */
+.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo,.mapboxgl-ctrl-group { display:none !important; }
+</style>
+</head>
+<body>
+<div class="frame">
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 1 · HOME
+══════════════════════════════════════════════════════════ -->
+<div id="s-home" class="screen active">
+  <div class="status">
+    <span class="status-time">12:04</span>
+    <div class="status-icons">
+      <i class="ti ti-signal-3g"></i>
+      <i class="ti ti-wifi"></i>
+      <i class="ti ti-battery-3"></i>
+    </div>
+  </div>
+
+  <div class="topbar">
+    <div class="icon-btn" onclick="openSettings()"><svg width="18" height="18" viewBox="0 0 24 24" fill="#4da3ff"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a5.35 5.35 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 13.92 2h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+    <div class="game-pill">
+      <span>CHAT ASSASSINS...</span>
+      <i class="ti ti-chevron-down"></i>
+    </div>
+    <div class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="#4da3ff"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>
+  </div>
+
+  <!-- Pull-down handle -->
+  <div class="pull-tab" id="pull-tab">
+    <div class="pull-tab-bar"></div>
+  </div>
+
+  <div id="home-pullable">
+  <div class="search">
+    <i class="ti ti-search"></i>
+    <input type="text" placeholder="Search by player">
+  </div>
+
+  <div class="tabs">
+    <div class="tab-avatar" id="home-avatar"><i class="ti ti-user"></i></div>
+    <div class="tab active">Activity</div>
+    <div class="tab">Players</div>
+    <div class="tab">Powerups</div>
+    <div class="tab">Safe zones</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-label">Round</span>
+      <span class="stat-value">4</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Time Left</span>
+      <span class="stat-value">6d 23h</span>
+    </div>
+    <div class="stat-share-col">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+        <span class="stat-label">Game Code</span>
+        <span class="stat-code">UKVQUV</span>
+      </div>
+      <div class="share-btn"><i class="ti ti-share-2"></i></div>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="ann-card">
+      <div class="ann-head">
+        <div class="ann-logo"><img src="splashin logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+        <span class="ann-name">Splashin Team</span>
+      </div>
+      <div class="ann-body">Keep your friends close and your floaties closer 😼</div>
+    </div>
+
+    <div class="need-help">Need help?</div>
+
+    <div class="section-head">My Targets</div>
+    <div class="target-wrap">
+      <div class="target-col">
+        <div class="target-circle" id="home-target-circle"></div>
+        <span class="target-name-lbl" id="home-target-name">Ben</span>
+        <div class="target-status">
+          <div class="green-dot"></div>
+          <span style="font-size:13px;">🔒</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bounties-head">
+      <span>Bounties</span><span>💵</span>
+    </div>
+    <div class="bounties-empty">No bounties available</div>
+
+    <div class="activity-row">
+      <span class="lbl">Latest Activity</span>
+      <span class="lnk">View profile</span>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-item active" onclick="nav('home')"><i class="ti ti-home"></i></div>
+    <div class="nav-item" onclick="nav('map')"><i class="ti ti-player-play"></i></div>
+    <div class="nav-plus"><i class="ti ti-plus"></i></div>
+    <div class="nav-item"><i class="ti ti-message-circle"></i></div>
+    <div class="nav-item" onclick="openSettings()"><i class="ti ti-user"></i></div>
+  </div>
+  </div><!-- /home-pullable -->
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 2 · MAP
+══════════════════════════════════════════════════════════ -->
+<div id="s-map" class="screen">
+  <div id="mapbox"></div>
+
+  <!-- Floating overlay -->
+  <div class="map-float">
+    <div class="status">
+      <span class="status-time">12:04</span>
+      <div class="status-icons">
+        <i class="ti ti-signal-3g"></i>
+        <i class="ti ti-wifi"></i>
+        <i class="ti ti-battery-3"></i>
+      </div>
+    </div>
+    <div class="topbar">
+      <div class="icon-btn" onclick="openSettings()"><svg width="18" height="18" viewBox="0 0 24 24" fill="#4da3ff"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a5.35 5.35 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 13.92 2h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+      <div class="game-pill">
+        <span>CHAT ASSASSINS...</span>
+        <i class="ti ti-chevron-down"></i>
+      </div>
+      <div class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="#4da3ff"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>
+    </div>
+  </div>
+
+  <!-- Side buttons -->
+  <div class="map-left">
+    <div class="icon-btn icon-btn-amber"><i class="ti ti-users"></i></div>
+  </div>
+  <div class="map-right">
+    <div class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="#4da3ff"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>
+    <div class="icon-btn icon-btn-purple"><i class="ti ti-shield"></i></div>
+  </div>
+
+  <!-- Corner pills -->
+  <div class="map-corner-right">
+    <div class="pill-dark">5:32</div>
+    <div class="pill-light">600 pts</div>
+  </div>
+  <div class="map-corner-left">
+    <div class="crown-btn"><i class="ti ti-crown"></i></div>
+  </div>
+
+  <!-- Draggable bottom sheet -->
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle-area" id="sheet-handle">
+      <div class="sheet-handle"></div>
+    </div>
+    <div class="sheet-body">
+      <div class="tabs" style="padding-bottom:4px;">
+        <div class="tab-avatar" id="map-avatar"><i class="ti ti-user"></i></div>
+        <div class="tab active">Activity</div>
+        <div class="tab">Players</div>
+        <div class="tab">Powerups</div>
+        <div class="tab">Safe zones</div>
+      </div>
+      <div class="divider" style="margin-bottom:0;"></div>
+      <div class="stats" style="padding-top:12px;padding-bottom:10px;">
+        <div class="stat">
+          <span class="stat-label">Round</span>
+          <span class="stat-value">4</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Time Left</span>
+          <span class="stat-value">6d 23h</span>
+        </div>
+        <div class="stat-share-col">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span class="stat-label">Game Code</span>
+            <span class="stat-code">UKVQUV</span>
+          </div>
+          <div class="share-btn"><i class="ti ti-share-2"></i></div>
+        </div>
+      </div>
+      <div class="ann-card">
+        <div class="ann-head">
+          <div class="ann-logo"><img src="splashin logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+          <span class="ann-name">Splashin Team</span>
+        </div>
+        <div class="ann-body">Keep your friends close and your floaties closer 😼</div>
+      </div>
+      <div class="need-help">Need help?</div>
+      <div class="section-head">My Targets</div>
+      <div class="target-wrap">
+        <div class="target-col">
+          <div class="target-circle" id="sheet-target-circle"></div>
+          <span class="target-name-lbl" id="sheet-target-name">Ben</span>
+          <div class="target-status">
+            <div class="green-dot"></div>
+            <span style="font-size:13px;">🔒</span>
+          </div>
+        </div>
+      </div>
+      <div class="bounties-head">
+        <span>Bounties</span><span>💵</span>
+      </div>
+      <div class="bounties-empty">No bounties available</div>
+      <div class="activity-row">
+        <span class="lbl">Latest Activity</span>
+        <span class="lnk">View profile</span>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+  </div>
+
+  <!-- Map bottom nav -->
+  <div class="map-nav">
+    <div class="nav-item" onclick="nav('home')"><i class="ti ti-home"></i></div>
+    <div class="nav-item active" onclick="nav('map')"><i class="ti ti-player-play"></i></div>
+    <div class="nav-plus"><i class="ti ti-plus"></i></div>
+    <div class="nav-item"><i class="ti ti-message-circle"></i></div>
+    <div class="nav-item" onclick="openSettings()"><i class="ti ti-user"></i></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 3 · SETTINGS
+══════════════════════════════════════════════════════════ -->
+<div id="s-settings" class="screen">
+  <div class="status">
+    <span class="status-time">12:04</span>
+    <div class="status-icons">
+      <i class="ti ti-signal-3g"></i>
+      <i class="ti ti-wifi"></i>
+      <i class="ti ti-battery-3"></i>
+    </div>
+  </div>
+  <div class="settings-header">
+    <div class="back-btn" onclick="closeSettings()">
+      <i class="ti ti-chevron-left"></i><span>Back</span>
+    </div>
+    <span class="settings-title">Settings</span>
+  </div>
+
+  <div class="s-scroll">
+
+    <!-- My Target -->
+    <div class="s-section">
+      <div class="s-section-title">My Target</div>
+
+      <div class="s-field">
+        <div class="s-label">Target Name</div>
+        <input class="s-input" id="inp-target-name" type="text" placeholder="Target name">
+      </div>
+
+      <div class="s-field">
+        <div class="s-label">Target Photo</div>
+        <div class="photo-row">
+          <div class="photo-preview" id="prev-target-photo"><i class="ti ti-user"></i></div>
+          <button class="photo-btn" onclick="document.getElementById('file-target').click()">Change Photo</button>
+          <input type="file" id="file-target" accept="image/*" style="display:none" onchange="onTargetPhoto(this)">
+        </div>
+      </div>
+
+      <div class="s-field">
+        <div class="s-label">Target Location</div>
+        <div class="coords-row">
+          <input class="s-input" id="inp-lat" type="number" placeholder="Latitude" step="0.0001">
+          <input class="s-input" id="inp-lng" type="number" placeholder="Longitude" step="0.0001">
+        </div>
+        <button class="pin-btn" onclick="saveTargetPin()">Update Pin</button>
+        <div class="helper">Tap anywhere on the map then come back — or enter coordinates manually</div>
+      </div>
+    </div>
+
+    <!-- My Profile -->
+    <div class="s-section">
+      <div class="s-section-title">My Profile</div>
+
+      <div class="s-field">
+        <div class="s-label">Display Name</div>
+        <input class="s-input" id="inp-my-name" type="text" placeholder="Your name">
+      </div>
+
+      <div class="s-field">
+        <div class="s-label">Profile Photo</div>
+        <div class="photo-row">
+          <div class="photo-preview" id="prev-my-photo"><i class="ti ti-user"></i></div>
+          <button class="photo-btn" onclick="document.getElementById('file-me').click()">Change Photo</button>
+          <input type="file" id="file-me" accept="image/*" style="display:none" onchange="onMyPhoto(this)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Info -->
+    <div class="s-section">
+      <div class="s-section-title">Game Info</div>
+      <div class="info-row">
+        <div class="info-col">
+          <span class="stat-label">Round</span>
+          <span class="stat-value">4</span>
+        </div>
+        <div class="info-col">
+          <span class="stat-label">Time Left</span>
+          <span class="stat-value" style="font-size:15px;">6d 23h</span>
+        </div>
+        <div class="info-col">
+          <span class="stat-label">Game Code</span>
+          <span class="stat-code" style="font-size:13px;">UKVQUV</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:40px;"></div>
+  </div>
+</div><!-- /settings -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     PHOTO CROPPER MODAL
+══════════════════════════════════════════════════════════ -->
+<div id="crop-modal" class="crop-modal">
+  <div class="crop-title">Adjust Photo</div>
+  <div class="crop-viewport" id="crop-viewport">
+    <img id="crop-img" alt="">
+  </div>
+  <div class="crop-hint">Drag to reposition · Pinch or use slider to zoom</div>
+  <div class="crop-zoom-row">
+    <i class="ti ti-minus" style="font-size:14px;color:var(--muted);"></i>
+    <input type="range" id="crop-zoom" min="100" max="400" value="100">
+    <i class="ti ti-plus" style="font-size:14px;color:var(--muted);"></i>
+  </div>
+  <div class="crop-actions">
+    <button class="crop-btn crop-btn-cancel"  onclick="cropCancel()">Cancel</button>
+    <button class="crop-btn crop-btn-confirm" onclick="cropConfirm()">Use Photo</button>
+  </div>
+</div>
+
+</div><!-- /frame -->
+
+<script>
+// ─── MAPBOX SETUP ─────────────────────────────────────────────────────────────
+// 1. Go to mapbox.com/signup — free account, no credit card needed
+// 2. After signing in, go to your Account dashboard
+// 3. Copy your Default Public Token (starts with pk.)
+// 4. Replace YOUR_MAPBOX_TOKEN_HERE below with that token
+// 5. Free tier = 50,000 map loads/month, plenty for personal use
+// 6. Docs: https://docs.mapbox.com/mapbox-gl-js/guides/
+const MAPBOX_TOKEN = 'pk.eyJ1IjoiZHlsYW5qZXNpbiIsImEiOiJjbXAwcXdjM20xcXZpMnBvZ3dtbmQzZW44In0.PvSJ7RG9X4QgLSK3Ypqrng';
+
+// ─── localStorage helpers ─────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const ls  = (k, d='') => { const v=localStorage.getItem(k); return v!==null?v:d; };
+const lss = (k, v) => localStorage.setItem(k, v);
+
+// ─── App state ────────────────────────────────────────────────────────────────
+let map = null, playerMarker = null, targetMarker = null;
+let prevScreen = 'home';
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+function boot() {
+  // Populate settings inputs from localStorage
+  $('inp-target-name').value = ls('splashin_target_name','Ben');
+  $('inp-my-name').value     = ls('splashin_my_name','');
+  $('inp-lat').value         = ls('splashin_target_lat','43.762');
+  $('inp-lng').value         = ls('splashin_target_lng','-79.420');
+
+  applyTargetName(ls('splashin_target_name','Ben'));
+  applyTargetPhoto(ls('splashin_target_photo',''));
+  applyMyPhoto(ls('splashin_my_photo','') || 'dylan-profile.JPG');
+
+  // Auto-save on blur
+  $('inp-target-name').addEventListener('blur', () => {
+    const v = $('inp-target-name').value.trim() || 'Ben';
+    lss('splashin_target_name', v);
+    applyTargetName(v);
+  });
+  $('inp-my-name').addEventListener('blur', () => {
+    lss('splashin_my_name', $('inp-my-name').value.trim());
+  });
+
+  initSheet();
+  initPullDown();
+  initCropper();
+  // Home is always displayed; ensure correct z-order on start
+  $('s-home').style.zIndex = '2';
+  $('s-map').style.zIndex  = '1';
+}
+
+// ─── Screen routing ───────────────────────────────────────────────────────────
+function nav(id) {
+  if (id === 'map') {
+    // Ensure map is ready
+    if (!map) { initMap(); setTimeout(() => map && map.resize(), 200); }
+    else map.resize();
+    $('s-home').style.zIndex = '0';
+    $('s-map').style.zIndex  = '2';
+    prevScreen = 'map';
+  } else if (id === 'home') {
+    $('s-home').style.zIndex = '2';
+    $('s-map').style.zIndex  = '1';
+    // Slide home content back in from bottom
+    const p = $('home-pullable');
+    p.classList.remove('snap');
+    p.style.transform = `translateY(${frameH()}px)`;
+    requestAnimationFrame(() => {
+      p.classList.add('snap');
+      p.style.transform = 'translateY(0)';
+      p.addEventListener('transitionend', () => p.classList.remove('snap'), { once:true });
+    });
+    prevScreen = 'home';
+  }
+}
+
+// ─── Pull-down gesture ────────────────────────────────────────────────────────
+let pullDragging = false, pullStartY = 0, pullLastY = 0;
+const PULL_COMMIT = 150;
+
+function frameH() {
+  return document.querySelector('.frame').clientHeight;
+}
+
+function initPullDown() {
+  const tab = $('pull-tab');
+  tab.addEventListener('mousedown',  pullStart);
+  tab.addEventListener('touchstart', pullStart, { passive:true });
+  document.addEventListener('mousemove',  pullMove);
+  document.addEventListener('touchmove',  pullMove, { passive:false });
+  document.addEventListener('mouseup',   pullEnd);
+  document.addEventListener('touchend',  pullEnd);
+}
+
+function pullStart(e) {
+  if (prevScreen !== 'home') return;
+  pullStartY = pullLastY = cy(e);
+  pullDragging = true;
+  // Pre-warm map so it's ready behind the home panel
+  if (!map) initMap();
+  const p = $('home-pullable');
+  p.classList.remove('snap');
+}
+
+function pullMove(e) {
+  if (!pullDragging) return;
+  pullLastY = cy(e);
+  const dy = Math.max(0, pullLastY - pullStartY);
+  if (dy > 0 && e.cancelable) e.preventDefault();
+  $('home-pullable').style.transform = `translateY(${dy}px)`;
+}
+
+function pullEnd() {
+  if (!pullDragging) return;
+  pullDragging = false;
+  const dy = Math.max(0, pullLastY - pullStartY);
+  const p = $('home-pullable');
+  if (dy > PULL_COMMIT) {
+    // Commit — fly off screen then switch
+    p.classList.add('snap');
+    p.style.transform = `translateY(${frameH()}px)`;
+    p.addEventListener('transitionend', () => {
+      p.classList.remove('snap');
+      p.style.transform = '';
+      nav('map');
+    }, { once:true });
+  } else {
+    // Snap back
+    p.classList.add('snap');
+    p.style.transform = 'translateY(0)';
+    p.addEventListener('transitionend', () => p.classList.remove('snap'), { once:true });
+  }
+}
+
+function cy(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
+
+function openSettings() {
+  $('s-settings').classList.add('open');
+}
+function closeSettings() {
+  $('s-settings').classList.remove('open');
+}
+
+// ─── Reactive UI helpers ──────────────────────────────────────────────────────
+function applyTargetName(name) {
+  $('home-target-name').textContent  = name;
+  $('sheet-target-name').textContent = name;
+}
+
+function applyTargetPhoto(b64) {
+  // Home + sheet avatars
+  ['home-target-circle','sheet-target-circle'].forEach(id => {
+    const el = $(id);
+    el.innerHTML = b64
+      ? `<img src="${b64}" style="width:100%;height:100%;object-fit:cover;">`
+      : '';
+    el.style.background = b64 ? 'transparent' : '#000';
+  });
+  // Settings preview
+  setPhotoPreview('prev-target-photo', b64);
+  // Map marker
+  if (targetMarker) refreshTargetMarker();
+}
+
+function applyMyPhoto(b64) {
+  // Tab avatars
+  ['home-avatar','map-avatar'].forEach(id => {
+    const el = $(id);
+    if (b64) {
+      el.innerHTML = `<img src="${b64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+      el.innerHTML = '<i class="ti ti-user"></i>';
+    }
+  });
+  // Settings preview
+  setPhotoPreview('prev-my-photo', b64);
+  // Player marker
+  if (playerMarker) refreshPlayerMarker();
+}
+
+function setPhotoPreview(id, b64) {
+  const el = $(id);
+  el.innerHTML = b64
+    ? `<img src="${b64}">`
+    : '<i class="ti ti-user"></i>';
+}
+
+// ─── Photo file handlers ──────────────────────────────────────────────────────
+function onTargetPhoto(input) {
+  const f = input.files[0];
+  if (!f) return;
+  openCropper(f, b64 => {
+    lss('splashin_target_photo', b64);
+    applyTargetPhoto(b64);
+  });
+}
+function onMyPhoto(input) {
+  const f = input.files[0];
+  if (!f) return;
+  openCropper(f, b64 => {
+    lss('splashin_my_photo', b64);
+    applyMyPhoto(b64);
+  });
+}
+
+// ─── Target pin update ────────────────────────────────────────────────────────
+function saveTargetPin() {
+  const lat = parseFloat($('inp-lat').value);
+  const lng = parseFloat($('inp-lng').value);
+  if (isNaN(lat)||isNaN(lng)) return;
+  lss('splashin_target_lat', lat);
+  lss('splashin_target_lng', lng);
+  if (targetMarker) targetMarker.setLngLat([lng, lat]);
+}
+
+// ─── Mapbox ───────────────────────────────────────────────────────────────────
+function initMap() {
+  if (MAPBOX_TOKEN === 'YOUR_MAPBOX_TOKEN_HERE') {
+    $('mapbox').innerHTML = `
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;background:#0d1117;padding:28px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:18px;">🗺️</div>
+        <div style="color:#fff;font-size:17px;font-weight:700;margin-bottom:10px;">Add Your Mapbox Token</div>
+        <div style="color:#888;font-size:13px;line-height:1.75;">
+          1. Visit <span style="color:#4da3ff;">mapbox.com/signup</span> (free)<br>
+          2. Copy your Default Public Token<br>
+          3. Replace <code style="color:#f59e0b;background:#1a1a1a;padding:2px 6px;border-radius:4px;">YOUR_MAPBOX_TOKEN_HERE</code><br>
+          &nbsp;&nbsp;&nbsp;in the &lt;script&gt; at the bottom of index.html
+        </div>
+      </div>`;
+    return;
+  }
+
+  mapboxgl.accessToken = MAPBOX_TOKEN;
+  map = new mapboxgl.Map({
+    container: 'mapbox',
+    style: 'mapbox://styles/mapbox/dark-v11',
+    center: [-79.415, 43.758],
+    zoom: 13,
+    attributionControl: false,
+  });
+
+  map.on('load', () => {
+    addPlayerMarker();
+    addTargetMarker();
+  });
+
+  // Long-press on map → drop target pin
+  let lpTimer = null;
+  const startLP = e => { lpTimer = setTimeout(() => dropPin(e.lngLat), 650); };
+  const clearLP = () => clearTimeout(lpTimer);
+  map.on('mousedown', startLP);
+  map.on('mouseup',   clearLP);
+  map.on('mousemove', clearLP);
+  map.on('touchstart', e => { lpTimer = setTimeout(() => dropPin(e.lngLat), 650); });
+  map.on('touchend',  clearLP);
+  map.on('touchmove', clearLP);
+}
+
+function markerEl(cls) {
+  const d = document.createElement('div');
+  d.className = 'pin ' + cls;
+  return d;
+}
+function pinHTML(b64) {
+  return b64
+    ? `<img src="${b64}">`
+    : '<i class="ti ti-user"></i>';
+}
+
+function addPlayerMarker() {
+  const el = markerEl('');
+  el.innerHTML = `
+    <div class="pin-circle" id="mp-player">${pinHTML(ls('splashin_my_photo',''))}</div>
+    <div class="pin-point"></div>`;
+  playerMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+    .setLngLat([-79.415, 43.758])
+    .addTo(map);
+}
+
+function addTargetMarker() {
+  const lat = parseFloat(ls('splashin_target_lat','43.762'));
+  const lng = parseFloat(ls('splashin_target_lng','-79.420'));
+  const el = markerEl('pin-target');
+  el.innerHTML = `
+    <div class="pin-circle" id="mp-target">${pinHTML(ls('splashin_target_photo',''))}</div>
+    <div class="pin-point"></div>`;
+  targetMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+    .setLngLat([lng, lat])
+    .addTo(map);
+}
+
+function refreshPlayerMarker() {
+  const el = document.getElementById('mp-player');
+  if (el) el.innerHTML = pinHTML(ls('splashin_my_photo',''));
+}
+function refreshTargetMarker() {
+  const el = document.getElementById('mp-target');
+  if (el) el.innerHTML = pinHTML(ls('splashin_target_photo',''));
+}
+
+function dropPin(lngLat) {
+  const lat = +lngLat.lat.toFixed(6);
+  const lng = +lngLat.lng.toFixed(6);
+  lss('splashin_target_lat', lat);
+  lss('splashin_target_lng', lng);
+  $('inp-lat').value = lat;
+  $('inp-lng').value = lng;
+  if (targetMarker) targetMarker.setLngLat([lng, lat]);
+}
+
+// ─── Bottom sheet ─────────────────────────────────────────────────────────────
+const SNAPS = [100, 340, 580];
+
+let shH = SNAPS[0], dragY0 = 0, dragH0 = 0, dragging = false;
+
+function initSheet() {
+  const handle = $('sheet-handle');
+  handle.addEventListener('mousedown',  startDrag);
+  handle.addEventListener('touchstart', startDrag, { passive: true });
+  document.addEventListener('mousemove',  moveDrag);
+  document.addEventListener('touchmove',  moveDrag, { passive: false });
+  document.addEventListener('mouseup',   endDrag);
+  document.addEventListener('touchend',  endDrag);
+}
+
+function startDrag(e) {
+  dragging = true; dragY0 = clientY(e); dragH0 = shH;
+  $('sheet').style.transition = 'none';
+}
+function moveDrag(e) {
+  if (!dragging) return;
+  if (e.cancelable) e.preventDefault();
+  const delta = dragY0 - clientY(e);
+  snapSheet(Math.max(SNAPS[0], Math.min(SNAPS[2], dragH0 + delta)), false);
+}
+function endDrag() {
+  if (!dragging) return;
+  dragging = false;
+  // Find nearest snap
+  let best = SNAPS[0], bestD = Infinity;
+  SNAPS.forEach(s => { const d=Math.abs(shH-s); if(d<bestD){bestD=d;best=s;} });
+  snapSheet(best, true);
+}
+function snapSheet(h, animate) {
+  shH = h;
+  const el = $('sheet');
+  el.style.transition = animate ? 'height .3s cubic-bezier(.4,0,.2,1)' : 'none';
+  el.style.height = h + 'px';
+}
+function clientY(e) { return e.touches ? (e.touches[0]||e.changedTouches[0]).clientY : e.clientY; }
+
+// ─── Photo Cropper ────────────────────────────────────────────────────────────
+const CROP_SIZE = 220;
+let cropCB = null, cropNatW = 0, cropNatH = 0;
+let cropScale = 1, cropBaseScale = 1;
+let cropX = 0, cropY = 0;
+let cropDragging = false, cropDX = 0, cropDY = 0, cropX0 = 0, cropY0 = 0;
+
+function openCropper(file, callback) {
+  cropCB = callback;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = $('crop-img');
+    img.onload = () => {
+      cropNatW = img.naturalWidth;
+      cropNatH = img.naturalHeight;
+      cropBaseScale = CROP_SIZE / Math.min(cropNatW, cropNatH);
+      cropScale = cropBaseScale;
+      cropX = (CROP_SIZE - cropNatW * cropScale) / 2;
+      cropY = (CROP_SIZE - cropNatH * cropScale) / 2;
+      $('crop-zoom').value = 100;
+      applyCropTransform();
+      $('crop-modal').classList.add('open');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyCropTransform() {
+  const img = $('crop-img');
+  img.style.width  = (cropNatW * cropScale) + 'px';
+  img.style.height = (cropNatH * cropScale) + 'px';
+  img.style.transform = `translate(${cropX}px,${cropY}px)`;
+}
+
+function cropCancel()  { $('crop-modal').classList.remove('open'); }
+
+function cropConfirm() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = CROP_SIZE;
+  const ctx = canvas.getContext('2d');
+  ctx.beginPath();
+  ctx.arc(CROP_SIZE/2, CROP_SIZE/2, CROP_SIZE/2, 0, Math.PI*2);
+  ctx.clip();
+  ctx.drawImage($('crop-img'), cropX, cropY, cropNatW * cropScale, cropNatH * cropScale);
+  const b64 = canvas.toDataURL('image/jpeg', 0.92);
+  $('crop-modal').classList.remove('open');
+  if (cropCB) cropCB(b64);
+}
+
+function initCropper() {
+  const vp = $('crop-viewport');
+
+  // Drag to pan
+  vp.addEventListener('mousedown', e => {
+    cropDragging = true; cropDX = e.clientX; cropDY = e.clientY;
+    cropX0 = cropX; cropY0 = cropY; e.preventDefault();
+  });
+  vp.addEventListener('touchstart', e => {
+    cropDragging = true;
+    cropDX = e.touches[0].clientX; cropDY = e.touches[0].clientY;
+    cropX0 = cropX; cropY0 = cropY;
+  }, { passive:true });
+
+  document.addEventListener('mousemove', e => {
+    if (!cropDragging) return;
+    cropX = cropX0 + (e.clientX - cropDX);
+    cropY = cropY0 + (e.clientY - cropDY);
+    applyCropTransform();
+  });
+  document.addEventListener('touchmove', e => {
+    if (!cropDragging) return;
+    cropX = cropX0 + (e.touches[0].clientX - cropDX);
+    cropY = cropY0 + (e.touches[0].clientY - cropDY);
+    applyCropTransform();
+    if (e.cancelable) e.preventDefault();
+  }, { passive:false });
+
+  document.addEventListener('mouseup',  () => cropDragging = false);
+  document.addEventListener('touchend', () => cropDragging = false);
+
+  // Zoom slider
+  $('crop-zoom').addEventListener('input', e => {
+    const newScale = cropBaseScale * (parseInt(e.target.value) / 100);
+    const cx = CROP_SIZE / 2, cy = CROP_SIZE / 2;
+    const ratio = newScale / cropScale;
+    cropX = cx + (cropX - cx) * ratio;
+    cropY = cy + (cropY - cy) * ratio;
+    cropScale = newScale;
+    applyCropTransform();
+  });
+}
+
+// ─── Go ───────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
