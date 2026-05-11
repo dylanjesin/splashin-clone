@@ -673,7 +673,7 @@ body {
 
   <!-- Corner pills -->
   <div class="map-corner-right">
-    <div class="pill-dark" id="map-timer">10:00</div>
+    <div class="pill-dark" id="map-timer" style="border:2px solid rgba(77,163,255,0.45);">10:00</div>
     <div class="pill-light">600 pts</div>
   </div>
   <div class="map-corner-left">
@@ -1154,11 +1154,19 @@ function initMap() {
   map.on('load', () => {
     addPlayerMarker();
     addTargetMarker();
-    // Center on real GPS position if available
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(pos => {
-        map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15, duration: 1200 });
-      }, () => {});
+      navigator.geolocation.watchPosition(pos => {
+        const lng = pos.coords.longitude;
+        const lat = pos.coords.latitude;
+        if (playerMarker) playerMarker.setLngLat([lng, lat]);
+        lss('splashin_my_lat', lat);
+        lss('splashin_my_lng', lng);
+        updateMyLocDisplay(lat, lng);
+        if (!window._mapCentered) {
+          map.flyTo({ center: [lng, lat], zoom: 15, duration: 1200 });
+          window._mapCentered = true;
+        }
+      }, () => {}, { enableHighAccuracy: true, maximumAge: 5000 });
     }
   });
 
