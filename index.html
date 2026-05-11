@@ -825,6 +825,24 @@ body {
           <input type="file" id="file-me" accept="image/*" style="display:none" onchange="onMyPhoto(this)">
         </div>
       </div>
+
+      <div class="s-field">
+        <div class="s-label">My Location</div>
+        <div id="my-loc-display" class="loc-display">
+          <i class="ti ti-map-pin" style="color:var(--blue);font-size:16px;"></i>
+          <span id="my-loc-text">Loading…</span>
+        </div>
+        <div id="my-loc-map-wrap" class="loc-map-wrap" style="display:none;">
+          <div id="my-loc-map" class="loc-map"></div>
+          <div class="loc-map-hint">Drag the pin to set your location</div>
+          <button class="pin-btn" onclick="confirmMyLocMap()">Confirm Location</button>
+        </div>
+        <button class="pin-btn" id="my-loc-pick-btn" onclick="toggleMyLocMap()">
+          <i class="ti ti-map-pin"></i> Pick on Map
+        </button>
+        <input type="hidden" id="inp-my-lat">
+        <input type="hidden" id="inp-my-lng">
+      </div>
     </div>
 
     <!-- Game Info -->
@@ -899,6 +917,7 @@ function boot() {
   $('inp-lat').value         = ls('splashin_target_lat','43.762');
   $('inp-lng').value         = ls('splashin_target_lng','-79.420');
   updateLocDisplay(parseFloat(ls('splashin_target_lat','43.762')), parseFloat(ls('splashin_target_lng','-79.420')));
+  updateMyLocDisplay(parseFloat(ls('splashin_my_lat','43.758')), parseFloat(ls('splashin_my_lng','-79.415')));
 
   applyTargetName(ls('splashin_target_name','Ben'));
   applyTargetPhoto(ls('splashin_target_photo',''));
@@ -1127,7 +1146,7 @@ function initMap() {
   map = new mapboxgl.Map({
     container: 'mapbox',
     style: 'mapbox://styles/mapbox/dark-v11',
-    center: [-79.415, 43.758],
+    center: [parseFloat(ls('splashin_my_lng','-79.415')), parseFloat(ls('splashin_my_lat','43.758'))],
     zoom: 13,
     attributionControl: false,
   });
@@ -1135,6 +1154,12 @@ function initMap() {
   map.on('load', () => {
     addPlayerMarker();
     addTargetMarker();
+    // Center on real GPS position if available
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        map.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15, duration: 1200 });
+      }, () => {});
+    }
   });
 
 }
@@ -1151,12 +1176,14 @@ function pinHTML(b64) {
 }
 
 function addPlayerMarker() {
+  const lat = parseFloat(ls('splashin_my_lat','43.758'));
+  const lng = parseFloat(ls('splashin_my_lng','-79.415'));
   const el = markerEl('');
   el.innerHTML = `
     <div class="pin-circle" id="mp-player">${pinHTML(ls('splashin_my_photo',''))}</div>
     <div class="pin-point"></div>`;
   playerMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-    .setLngLat([-79.415, 43.758])
+    .setLngLat([lng, lat])
     .addTo(map);
 }
 
@@ -1235,6 +1262,60 @@ function confirmLocMap() {
   dropPin(ll);
   document.getElementById('loc-map-wrap').style.display = 'none';
   document.getElementById('loc-pick-btn').innerHTML = '<i class="ti ti-map-pin"></i> Pick on Map';
+}
+
+function updateMyLocDisplay(lat, lng) {
+  const el = document.getElementById('my-loc-text');
+  if (el) el.textContent = lat.toFixed(4) + ', ' + lng.toFixed(4);
+}
+
+let myLocMap = null, myLocMarker = null;
+function toggleMyLocMap() {
+  const wrap = document.getElementById('my-loc-map-wrap');
+  const btn  = document.getElementById('my-loc-pick-btn');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = 'block';
+    btn.textContent = '✕ Cancel';
+    const lat = parseFloat(ls('splashin_my_lat','43.758'));
+    const lng = parseFloat(ls('splashin_my_lng','-79.415'));
+    if (!myLocMap) {
+      myLocMap = new mapboxgl.Map({
+        container: 'my-loc-map',
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: [lng, lat],
+        zoom: 14
+      });
+      myLocMap.on('load', () => {
+        const el = document.createElement('div');
+        el.innerHTML = '<div style="width:16px;height:16px;background:#4da3ff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(77,163,255,.6);"></div>';
+        myLocMarker = new mapboxgl.Marker({ element: el, anchor: 'center', draggable: true })
+          .setLngLat([lng, lat])
+          .addTo(myLocMap);
+      });
+    } else {
+      myLocMap.resize();
+      myLocMarker.setLngLat([lng, lat]);
+      myLocMap.setCenter([lng, lat]);
+    }
+  } else {
+    wrap.style.display = 'none';
+    btn.innerHTML = '<i class="ti ti-map-pin"></i> Pick on Map';
+  }
+}
+
+function confirmMyLocMap() {
+  if (!myLocMarker) return;
+  const ll = myLocMarker.getLngLat();
+  const lat = +ll.lat.toFixed(6);
+  const lng = +ll.lng.toFixed(6);
+  lss('splashin_my_lat', lat);
+  lss('splashin_my_lng', lng);
+  document.getElementById('inp-my-lat').value = lat;
+  document.getElementById('inp-my-lng').value = lng;
+  if (playerMarker) playerMarker.setLngLat([lng, lat]);
+  updateMyLocDisplay(lat, lng);
+  document.getElementById('my-loc-map-wrap').style.display = 'none';
+  document.getElementById('my-loc-pick-btn').innerHTML = '<i class="ti ti-map-pin"></i> Pick on Map';
 }
 
 // ─── Bottom sheet ─────────────────────────────────────────────────────────────
