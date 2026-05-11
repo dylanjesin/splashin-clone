@@ -63,8 +63,14 @@ body {
   flex-shrink:0;
 }
 @media(max-width:430px){
-  body{ align-items:flex-start; background:var(--bg); }
-  .frame{ width:100%; height:100dvh; border-radius:0; border:none; box-shadow:none; }
+  body{ align-items:flex-start; background:var(--bg); overflow:hidden; }
+  .frame{
+    width:calc(100% / 1.1);
+    height:calc(100dvh / 1.1);
+    border-radius:0; border:none; box-shadow:none;
+    transform:scale(1.1);
+    transform-origin:top left;
+  }
 }
 
 /* ─── Screen layer system ────────────────────────────────── */
@@ -106,18 +112,6 @@ body {
   z-index:50;
 }
 #s-settings.open { transform:translateX(0); }
-
-/* ─── Status bar ─────────────────────────────────────────── */
-.status {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:14px 22px 6px;
-  flex-shrink:0;
-}
-.status-time { font-size:16px; font-weight:700; }
-.status-icons { display:flex; gap:5px; align-items:center; }
-.status-icons i { font-size:14px; }
 
 /* ─── Top bar ────────────────────────────────────────────── */
 .topbar {
@@ -262,8 +256,23 @@ body {
 }
 .target-circle img { width:100%; height:100%; object-fit:cover; }
 .target-name-lbl { font-size:13px; font-weight:500; color:var(--muted); }
-.target-status { display:flex; align-items:center; gap:3px; }
-.green-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; }
+.target-badge {
+  position:relative;
+  display:flex; align-items:center;
+  width:52px; height:24px; margin-top:2px;
+}
+.badge-pill {
+  width:36px; height:17px; border-radius:999px;
+  background:rgba(34,197,94,.65);
+  box-shadow:0 0 12px 5px rgba(34,197,94,.45);
+}
+.badge-lock {
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+  width:24px; height:24px; border-radius:50%;
+  background:#3b82f6;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
 
 /* ─── Bounties ───────────────────────────────────────────── */
 .bounties-head {
@@ -330,25 +339,23 @@ body {
 
 /* Side button groups */
 .map-left, .map-right {
-  position:absolute; top:108px; z-index:5;
+  position:absolute; top:58px; z-index:5;
   display:flex; flex-direction:column; gap:8px;
 }
-.map-left  { left:var(--margin); }
-.map-right { right:var(--margin); }
+.map-left  { left:calc(var(--margin) - 12px); }
+.map-right { right:calc(var(--margin) - 12px); }
 
-.icon-btn-amber { background:#1f1800; }
-.icon-btn-amber i { color:#f59e0b; }
-.icon-btn-purple { background:#1e0d3a; }
-.icon-btn-purple i { color:#a78bfa; }
+.icon-btn-amber { width:58px; height:58px; background:url('manypeople.png') no-repeat center center / 58px 58px; border-radius:0; }
+.icon-btn-purple { width:58px; height:58px; background:url('shieldicon.png') no-repeat center center / 58px 58px; border-radius:0; }
 
 /* Corner pills */
 .map-corner-right {
-  position:absolute; right:var(--margin); bottom:calc(var(--nav) + 115px);
+  position:absolute; right:var(--margin); bottom:182px;
   z-index:5;
   display:flex; flex-direction:column; align-items:flex-end; gap:6px;
 }
 .map-corner-left {
-  position:absolute; left:var(--margin); bottom:calc(var(--nav) + 115px);
+  position:absolute; left:calc(var(--margin) - 13px); bottom:182px;
   z-index:5;
 }
 .pill-dark {
@@ -360,11 +367,9 @@ body {
   padding:6px 14px; font-size:14px; font-weight:700; color:#111;
 }
 .crown-btn {
-  width:42px; height:42px; border-radius:50%;
-  background:var(--btn-bg);
+  width:63px; height:63px;
   display:flex; align-items:center; justify-content:center;
 }
-.crown-btn i { color:#f59e0b; font-size:20px; }
 
 /* Map nav (absolute) */
 .map-nav {
@@ -379,7 +384,8 @@ body {
 /* ─── Map markers ────────────────────────────────────────── */
 .pin {
   display:flex; flex-direction:column; align-items:center;
-  cursor:pointer; position:relative;
+  cursor:pointer;
+  filter:drop-shadow(0 3px 10px rgba(0,0,0,.55));
 }
 .pin-circle {
   width:52px; height:52px; border-radius:50%;
@@ -387,22 +393,18 @@ body {
   background:#fff;
   overflow:hidden;
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 3px 14px rgba(0,0,0,.5);
+  flex-shrink:0;
+  position:relative; z-index:1;
 }
 .pin-circle img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
 .pin-circle i { color:#888; font-size:28px; }
 .pin-point {
-  width:0; height:0; margin-top:-1px;
+  width:0; height:0; margin-top:-5px;
   border-left:8px solid transparent;
   border-right:8px solid transparent;
   border-top:12px solid #fff;
 }
 
-.pin-target .pin-circle {
-  border-color:#ef4444; background:#111;
-  box-shadow:0 3px 14px rgba(239,68,68,.4);
-}
-.pin-target .pin-point { border-top-color:#ef4444; }
 
 /* ─── Draggable bottom sheet ─────────────────────────────── */
 .sheet {
@@ -478,14 +480,19 @@ body {
   font-weight:500; cursor:pointer;
 }
 
-.coords-row { display:flex; gap:10px; margin-bottom:10px; }
-.coords-row .s-input { flex:1; }
 .pin-btn {
   width:100%; background:var(--blue); border:none; border-radius:10px;
   padding:12px; color:#fff; font-size:15px; font-weight:600;
-  cursor:pointer; margin-bottom:8px;
+  cursor:pointer; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:6px;
 }
-.helper { font-size:11px; color:var(--dim); text-align:center; }
+.loc-display {
+  display:flex; align-items:center; gap:8px;
+  background:var(--input); border-radius:10px; padding:10px 14px;
+  margin-bottom:10px; font-size:13px; color:var(--muted);
+}
+.loc-map-wrap { margin-bottom:10px; }
+.loc-map { width:100%; height:200px; border-radius:10px; overflow:hidden; }
+.loc-map-hint { font-size:12px; color:var(--dim); text-align:center; margin:6px 0 8px; }
 
 .info-row {
   display:flex; background:var(--card); border-radius:var(--r-card); overflow:hidden;
@@ -579,7 +586,7 @@ body {
     </div>
     <div class="stat">
       <span class="stat-label">Time Left</span>
-      <span class="stat-value">6d 23h</span>
+      <span class="stat-value time-left-val">--</span>
     </div>
     <div class="stat-share-col">
       <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
@@ -606,9 +613,15 @@ body {
       <div class="target-col">
         <div class="target-circle" id="home-target-circle"></div>
         <span class="target-name-lbl" id="home-target-name">Ben</span>
-        <div class="target-status">
-          <div class="green-dot"></div>
-          <span style="font-size:13px;">🔒</span>
+        <div class="target-badge">
+          <div class="badge-pill"></div>
+          <div class="badge-lock">
+            <svg width="12" height="13" viewBox="0 0 12 13" fill="none">
+              <path d="M2.5 5.5V3.8a3.5 3.5 0 0 1 7 0v1.7" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <rect x=".5" y="5.5" width="11" height="7.5" rx="1.8" fill="#fbbf24"/>
+              <circle cx="6" cy="9.2" r="1.2" fill="#d97706"/>
+            </svg>
+          </div>
         </div>
       </div>
     </div>
@@ -642,14 +655,6 @@ body {
 
   <!-- Floating overlay -->
   <div class="map-float">
-    <div class="status">
-      <span class="status-time">12:04</span>
-      <div class="status-icons">
-        <i class="ti ti-signal-3g"></i>
-        <i class="ti ti-wifi"></i>
-        <i class="ti ti-battery-3"></i>
-      </div>
-    </div>
     <div class="topbar">
       <div class="icon-btn" onclick="openSettings()"><svg width="18" height="18" viewBox="0 0 24 24" fill="#4da3ff"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a5.35 5.35 0 0 0-1.62-.94l-.36-2.54A.484.484 0 0 0 13.92 2h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
       <div class="game-pill">
@@ -662,20 +667,19 @@ body {
 
   <!-- Side buttons -->
   <div class="map-left">
-    <div class="icon-btn icon-btn-amber"><i class="ti ti-users"></i></div>
+    <div class="icon-btn icon-btn-amber"></div>
   </div>
   <div class="map-right">
-    <div class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="#4da3ff"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></div>
-    <div class="icon-btn icon-btn-purple"><i class="ti ti-shield"></i></div>
+    <div class="icon-btn icon-btn-purple"></div>
   </div>
 
   <!-- Corner pills -->
   <div class="map-corner-right">
-    <div class="pill-dark">5:32</div>
+    <div class="pill-dark" id="map-timer">10:00</div>
     <div class="pill-light">600 pts</div>
   </div>
   <div class="map-corner-left">
-    <div class="crown-btn"><i class="ti ti-crown"></i></div>
+    <div class="crown-btn"><img src="crown.png" style="width:100%;height:100%;object-fit:contain;"></div>
   </div>
 
   <!-- Draggable bottom sheet -->
@@ -699,7 +703,7 @@ body {
         </div>
         <div class="stat">
           <span class="stat-label">Time Left</span>
-          <span class="stat-value">6d 23h</span>
+          <span class="stat-value time-left-val">--</span>
         </div>
         <div class="stat-share-col">
           <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
@@ -722,9 +726,15 @@ body {
         <div class="target-col">
           <div class="target-circle" id="sheet-target-circle"></div>
           <span class="target-name-lbl" id="sheet-target-name">Ben</span>
-          <div class="target-status">
-            <div class="green-dot"></div>
-            <span style="font-size:13px;">🔒</span>
+          <div class="target-badge">
+            <div class="badge-pill"></div>
+            <div class="badge-lock">
+              <svg width="12" height="13" viewBox="0 0 12 13" fill="none">
+                <path d="M2.5 5.5V3.8a3.5 3.5 0 0 1 7 0v1.7" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+                <rect x=".5" y="5.5" width="11" height="7.5" rx="1.8" fill="#fbbf24"/>
+                <circle cx="6" cy="9.2" r="1.2" fill="#d97706"/>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -783,12 +793,20 @@ body {
 
       <div class="s-field">
         <div class="s-label">Target Location</div>
-        <div class="coords-row">
-          <input class="s-input" id="inp-lat" type="number" placeholder="Latitude" step="0.0001">
-          <input class="s-input" id="inp-lng" type="number" placeholder="Longitude" step="0.0001">
+        <div id="loc-display" class="loc-display">
+          <i class="ti ti-map-pin" style="color:var(--blue);font-size:16px;"></i>
+          <span id="loc-text">Loading…</span>
         </div>
-        <button class="pin-btn" onclick="saveTargetPin()">Update Pin</button>
-        <div class="helper">Tap anywhere on the map then come back — or enter coordinates manually</div>
+        <div id="loc-map-wrap" class="loc-map-wrap" style="display:none;">
+          <div id="loc-map" class="loc-map"></div>
+          <div class="loc-map-hint">Drag the pin to set target location</div>
+          <button class="pin-btn" onclick="confirmLocMap()">Confirm Location</button>
+        </div>
+        <button class="pin-btn" id="loc-pick-btn" onclick="toggleLocMap()">
+          <i class="ti ti-map-pin"></i> Pick on Map
+        </button>
+        <input type="hidden" id="inp-lat">
+        <input type="hidden" id="inp-lng">
       </div>
     </div>
 
@@ -821,7 +839,7 @@ body {
         </div>
         <div class="info-col">
           <span class="stat-label">Time Left</span>
-          <span class="stat-value" style="font-size:15px;">6d 23h</span>
+          <span class="stat-value time-left-val" style="font-size:15px;">--</span>
         </div>
         <div class="info-col">
           <span class="stat-label">Game Code</span>
@@ -882,6 +900,7 @@ function boot() {
   $('inp-my-name').value     = ls('splashin_my_name','');
   $('inp-lat').value         = ls('splashin_target_lat','43.762');
   $('inp-lng').value         = ls('splashin_target_lng','-79.420');
+  updateLocDisplay(parseFloat(ls('splashin_target_lat','43.762')), parseFloat(ls('splashin_target_lng','-79.420')));
 
   applyTargetName(ls('splashin_target_name','Ben'));
   applyTargetPhoto(ls('splashin_target_photo',''));
@@ -900,17 +919,38 @@ function boot() {
   initSheet();
   initPullDown();
   initCropper();
+  updateMapPills(false);
   // Home is always displayed; ensure correct z-order on start
   $('s-home').style.zIndex = '2';
   $('s-map').style.zIndex  = '1';
+  // Init map immediately so it's always live behind the home screen
+  initMap();
+
+  // Game end countdown to May 17 11:59pm
+  const deadline = new Date('2026-05-17T23:59:00');
+  function updateTimeLeft() {
+    const diff = deadline - Date.now();
+    const txt = diff <= 0 ? '0d 0h' : Math.floor(diff/86400000) + 'd ' + Math.floor((diff%86400000)/3600000) + 'h';
+    document.querySelectorAll('.time-left-val').forEach(el => el.textContent = txt);
+  }
+  updateTimeLeft();
+  setInterval(updateTimeLeft, 60000);
+
+  // Countdown timer from 10:00
+  let timerSecs = 10 * 60;
+  const timerEl = document.getElementById('map-timer');
+  setInterval(() => {
+    if (timerSecs > 0) timerSecs--;
+    const m = Math.floor(timerSecs / 60);
+    const s = timerSecs % 60;
+    timerEl.textContent = m + ':' + String(s).padStart(2, '0');
+  }, 1000);
 }
 
 // ─── Screen routing ───────────────────────────────────────────────────────────
 function nav(id) {
   if (id === 'map') {
-    // Ensure map is ready
-    if (!map) { initMap(); setTimeout(() => map && map.resize(), 200); }
-    else map.resize();
+    map && map.resize();
     $('s-home').style.zIndex = '0';
     $('s-map').style.zIndex  = '2';
     prevScreen = 'map';
@@ -952,8 +992,6 @@ function pullStart(e) {
   if (prevScreen !== 'home') return;
   pullStartY = pullLastY = cy(e);
   pullDragging = true;
-  // Pre-warm map so it's ready behind the home panel
-  if (!map) initMap();
   const p = $('home-pullable');
   p.classList.remove('snap');
 }
@@ -1101,16 +1139,6 @@ function initMap() {
     addTargetMarker();
   });
 
-  // Long-press on map → drop target pin
-  let lpTimer = null;
-  const startLP = e => { lpTimer = setTimeout(() => dropPin(e.lngLat), 650); };
-  const clearLP = () => clearTimeout(lpTimer);
-  map.on('mousedown', startLP);
-  map.on('mouseup',   clearLP);
-  map.on('mousemove', clearLP);
-  map.on('touchstart', e => { lpTimer = setTimeout(() => dropPin(e.lngLat), 650); });
-  map.on('touchend',  clearLP);
-  map.on('touchmove', clearLP);
 }
 
 function markerEl(cls) {
@@ -1163,6 +1191,52 @@ function dropPin(lngLat) {
   $('inp-lat').value = lat;
   $('inp-lng').value = lng;
   if (targetMarker) targetMarker.setLngLat([lng, lat]);
+  updateLocDisplay(lat, lng);
+}
+
+function updateLocDisplay(lat, lng) {
+  const el = document.getElementById('loc-text');
+  if (el) el.textContent = lat.toFixed(4) + ', ' + lng.toFixed(4);
+}
+
+let locMap = null, locMarker = null;
+function toggleLocMap() {
+  const wrap = document.getElementById('loc-map-wrap');
+  const btn  = document.getElementById('loc-pick-btn');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = 'block';
+    btn.textContent = '✕ Cancel';
+    if (!locMap) {
+      locMap = new mapboxgl.Map({
+        container: 'loc-map',
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center: [parseFloat(ls('splashin_target_lng','-79.420')), parseFloat(ls('splashin_target_lat','43.762'))],
+        zoom: 14
+      });
+      locMap.on('load', () => {
+        const el = document.createElement('div');
+        el.innerHTML = '<div style="width:16px;height:16px;background:#ef4444;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(239,68,68,.6);"></div>';
+        locMarker = new mapboxgl.Marker({ element: el, anchor: 'center', draggable: true })
+          .setLngLat([parseFloat(ls('splashin_target_lng','-79.420')), parseFloat(ls('splashin_target_lat','43.762'))])
+          .addTo(locMap);
+      });
+    } else {
+      locMap.resize();
+      locMarker.setLngLat([parseFloat(ls('splashin_target_lng','-79.420')), parseFloat(ls('splashin_target_lat','43.762'))]);
+      locMap.setCenter([parseFloat(ls('splashin_target_lng','-79.420')), parseFloat(ls('splashin_target_lat','43.762'))]);
+    }
+  } else {
+    wrap.style.display = 'none';
+    btn.innerHTML = '<i class="ti ti-map-pin"></i> Pick on Map';
+  }
+}
+
+function confirmLocMap() {
+  if (!locMarker) return;
+  const ll = locMarker.getLngLat();
+  dropPin(ll);
+  document.getElementById('loc-map-wrap').style.display = 'none';
+  document.getElementById('loc-pick-btn').innerHTML = '<i class="ti ti-map-pin"></i> Pick on Map';
 }
 
 // ─── Bottom sheet ─────────────────────────────────────────────────────────────
@@ -1201,8 +1275,21 @@ function endDrag() {
 function snapSheet(h, animate) {
   shH = h;
   const el = $('sheet');
-  el.style.transition = animate ? 'height .3s cubic-bezier(.4,0,.2,1)' : 'none';
+  const t = animate ? '.3s cubic-bezier(.4,0,.2,1)' : 'none';
+  el.style.transition = animate ? `height ${t}` : 'none';
   el.style.height = h + 'px';
+  updateMapPills(animate);
+}
+
+function updateMapPills(animate) {
+  const t = animate ? 'bottom .3s cubic-bezier(.4,0,.2,1)' : 'none';
+  const bottom = 70 + shH + 12; // 12px gap above sheet
+  ['.map-corner-right', '.map-corner-left'].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    el.style.transition = t;
+    el.style.bottom = bottom + 'px';
+  });
 }
 function clientY(e) { return e.touches ? (e.touches[0]||e.changedTouches[0]).clientY : e.clientY; }
 
